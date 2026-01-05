@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {
+      "name": "Test Discord webhook message forwarding",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "author": {
+          "username": "TestUser"
+        },
+        "content": "Test message from Discord"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
