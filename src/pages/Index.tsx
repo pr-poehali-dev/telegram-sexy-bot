@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
@@ -25,6 +27,8 @@ interface Notification {
 }
 
 const Index = () => {
+  const [inviteLink, setInviteLink] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [channels, setChannels] = useState<DiscordChannel[]>([
     {
       id: '1',
@@ -83,6 +87,37 @@ const Index = () => {
       ch.id === id ? { ...ch, connected: !ch.connected, status: !ch.connected ? 'active' : 'paused' } : ch
     ));
     toast.success(!channels.find(ch => ch.id === id)?.connected ? 'Канал подключен' : 'Канал отключен');
+  };
+
+  const handleAddChannel = () => {
+    if (!inviteLink.trim()) {
+      toast.error('Введите ссылку-приглашение');
+      return;
+    }
+
+    const discordInviteRegex = /discord\.(?:com|gg)\/(?:invite\/)?([a-zA-Z0-9-]+)/;
+    const match = inviteLink.match(discordInviteRegex);
+
+    if (!match) {
+      toast.error('Неверный формат ссылки Discord');
+      return;
+    }
+
+    const inviteCode = match[1];
+    const newChannel: DiscordChannel = {
+      id: Date.now().toString(),
+      name: inviteCode,
+      server: 'Новый сервер',
+      connected: true,
+      messagesCount: 0,
+      lastMessage: 'Канал только что подключен',
+      status: 'active'
+    };
+
+    setChannels([newChannel, ...channels]);
+    toast.success(`Канал ${inviteCode} успешно добавлен!`);
+    setInviteLink('');
+    setIsDialogOpen(false);
   };
 
   const totalMessages = channels.reduce((sum, ch) => sum + ch.messagesCount, 0);
@@ -177,10 +212,63 @@ const Index = () => {
                     Управление синхронизацией Discord каналов
                   </CardDescription>
                 </div>
-                <Button className="gradient-primary text-white border-0 hover:opacity-90">
-                  <Icon name="Plus" size={20} />
-                  Добавить
-                </Button>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gradient-primary text-white border-0 hover:opacity-90">
+                      <Icon name="Plus" size={20} />
+                      Добавить
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl flex items-center gap-2">
+                        <Icon name="LinkIcon" className="text-primary" />
+                        Подключить Discord канал
+                      </DialogTitle>
+                      <DialogDescription className="text-base mt-2">
+                        Вставьте ссылку-приглашение из Discord для мониторинга канала
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Ссылка-приглашение</label>
+                        <Input
+                          placeholder="discord.com/invite/stalcraft"
+                          value={inviteLink}
+                          onChange={(e) => setInviteLink(e.target.value)}
+                          className="text-base"
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddChannel()}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Поддерживаемые форматы: discord.com/invite/код, discord.gg/код
+                        </p>
+                      </div>
+                      
+                      <div className="p-4 rounded-lg bg-accent/20 border-2 border-accent/30">
+                        <div className="flex items-start gap-3">
+                          <Icon name="Info" className="text-accent mt-0.5" size={20} />
+                          <div className="text-sm">
+                            <p className="font-medium mb-1">Как получить ссылку?</p>
+                            <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                              <li>Откройте сервер в Discord</li>
+                              <li>ПКМ по каналу → Пригласить людей</li>
+                              <li>Скопируйте ссылку</li>
+                            </ol>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={handleAddChannel}
+                        className="w-full gradient-primary text-white border-0 hover:opacity-90"
+                        size="lg"
+                      >
+                        <Icon name="Plus" size={20} className="mr-2" />
+                        Подключить канал
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
